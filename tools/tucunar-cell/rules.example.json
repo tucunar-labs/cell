@@ -1,0 +1,26 @@
+{
+  "rules": [
+    {
+      "rule_id": "crane.load.high",
+      "source": "crane-monitor",
+      "kind": "measurement",
+      "name": "load",
+      "aggregate": "max",
+      "operator": "gte",
+      "threshold": 10,
+      "window_seconds": 300,
+      "group_by": ["tenant_id", "entity_id"]
+    },
+    {
+      "rule_id": "crane.cycle-time.slow",
+      "source": "crane-monitor",
+      "kind": "measurement",
+      "name": "cycle_time",
+      "aggregate": "p95",
+      "operator": "gt",
+      "threshold": 180,
+      "window_seconds": 900,
+      "group_by": ["tenant_id"]
+    }
+  ]
+}

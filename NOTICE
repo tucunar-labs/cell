@@ -1,0 +1,19 @@
+Tucunar Cell
+Copyright 2026 Tucunar SpA
+
+Tucunar-authored runtime, console and contracts in this distribution are
+licensed under Apache License 2.0. The Tucunar name and logos identify the
+project. The license does not grant trademark rights.
+
+The native console dynamically links Raven v0.2.2, Apache-2.0,
+https://github.com/oscar-soirey/Raven. Raven and its bundled dependencies
+retain their own license notices. Obtain Raven from its upstream release.
+This source archive does not redistribute the Raven binary.
+
+ClickHouse is deployed as a separate upstream OCI image and retains its
+upstream license and notices. Go, Rust and Python dependency versions are
+recorded in go.sum, Cargo.lock and the SCADA requirements file. Dependencies
+retain their own licenses. The separate SCADA simulator is not included.
+
+The commercial Tucunar website, identity service, billing and organization
+control plane are maintained separately and are not part of this distribution.

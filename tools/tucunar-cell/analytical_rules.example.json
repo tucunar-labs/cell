@@ -1,0 +1,42 @@
+{
+  "rules": [
+    {
+      "rule_id": "checkout.conversion.low",
+      "family": "ratio",
+      "source": "shopify",
+      "kind": "event",
+      "numerator": "payment_success",
+      "denominator": "checkout_started",
+      "operator": "lt",
+      "threshold": 0.2,
+      "window_seconds": 900,
+      "min_samples": 20,
+      "group_by": ["tenant_id"]
+    },
+    {
+      "rule_id": "crane.load.absent",
+      "family": "absence",
+      "source": "crane-monitor",
+      "kind": "measurement",
+      "name": "load",
+      "window_seconds": 300,
+      "baseline_window_seconds": 900,
+      "min_samples": 3,
+      "group_by": ["tenant_id", "entity_id"]
+    },
+    {
+      "rule_id": "crane.load.drop",
+      "family": "window_change",
+      "source": "crane-monitor",
+      "kind": "measurement",
+      "name": "load",
+      "aggregate": "avg",
+      "operator": "lt",
+      "threshold": 0.5,
+      "window_seconds": 300,
+      "baseline_window_seconds": 900,
+      "min_samples": 3,
+      "group_by": ["tenant_id", "entity_id"]
+    }
+  ]
+}

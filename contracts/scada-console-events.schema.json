@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tucunar.com/contracts/scada-console-events/1.0.0",
+  "title": "Local cell console event response",
+  "description": "Read-only local cell API response from GET /api/console/events. Access follows the cell dashboard authorization policy. The optional quality field is an additive observation supplied by the source.",
+  "type": "object",
+  "required": ["scenario_id", "last_event_at", "count", "events"],
+  "properties": {
+    "scenario_id": {"type": "string"},
+    "last_event_at": {"type": "string", "format": "date-time"},
+    "count": {"type": "integer", "minimum": 0},
+    "events": {"type": "array", "items": {"type": "object", "required": ["occurred_at", "entity_id", "name", "value", "unit"], "properties": {
+      "occurred_at": {"type": "string", "format": "date-time"}, "entity_id": {"type": "string"},
+      "name": {"type": "string"}, "value": {"type": "number"}, "unit": {"type": "string"}, "quality": {"type": "string"}
+    }}}
+  }
+}

@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tucunar-cell
+resources:
+  - namespace.yaml
+  - config.yaml
+  - local-storage.yaml
+  - clickhouse.yaml
+  - services-core.yaml
+  - services-capabilities.yaml
+  - network-policies.yaml

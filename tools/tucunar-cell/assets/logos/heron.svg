@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg viewBox="0 0 176 122" version="1.1" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+  <style type="text/css"><![CDATA[
+    .glyph .shape { fill: none; stroke: #102033; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .glyph .accent { stroke: #5c82b1; }
+    .glyph .warm { stroke: #d08351; }
+  ]]></style>
+  <g class="glyph" id="heron-mark">
+    <!-- Brackets bound the quality check without enclosing it. -->
+    <path class="shape accent" d="M72 28H62A10 10 0 0 0 52 38V51M52 71V84A10 10 0 0 0 62 94H72" id="left-bracket" />
+    <path class="shape accent" d="M104 28H114A10 10 0 0 1 124 38V51M124 71V84A10 10 0 0 1 114 94H104" id="right-bracket" />
+    <circle class="shape warm" cx="88" cy="61" r="28" id="quality-check" />
+    <path class="shape " d="M28 61H56M120 61H148" id="sample-line" />
+  </g>
+</svg>

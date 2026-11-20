@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+spec:
+  template:
+    spec:
+      containers:
+        - name: clickhouse
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: clickhouse-data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: tucunar-local
+        resources:
+          requests:
+            storage: 20Gi
+    - metadata:
+        name: clickhouse-logs
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: tucunar-local
+        resources:
+          requests:
+            storage: 2Gi

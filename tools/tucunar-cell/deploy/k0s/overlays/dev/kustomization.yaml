@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tucunar-cell
+resources:
+  - ../../base
+configMapGenerator:
+  - name: tucunar-cell-rules
+    files:
+      - rules.json
+secretGenerator:
+  - name: tucunar-cell-secrets
+    literals:
+      - CLICKHOUSE_PASSWORD=dev-clickhouse-password
+      - SIGNAL_INGEST_TOKEN=dev-signal-token-change-me
+      - CANARY_NODE_API_TOKEN=dev-node-token-change-me
+      - TUCUNAR_INTERNAL_TOKEN=dev-internal-token-change-me
+generatorOptions:
+  disableNameSuffixHash: true
+patches:
+  - path: context.patch.yaml
+  - path: canary-rules.patch.yaml
+images:
+  - name: ghcr.io/tucunar/swift
+    newTag: dev
+  - name: ghcr.io/tucunar/canary-evaluator
+    newTag: dev
+  - name: ghcr.io/tucunar/condor
+    newTag: dev
+  - name: ghcr.io/tucunar/hummingbird
+    newTag: dev

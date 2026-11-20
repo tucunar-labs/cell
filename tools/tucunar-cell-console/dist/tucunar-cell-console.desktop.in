@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=Tucunar Cell
+GenericName=Cell Console
+Comment=Native operator console for the Tucunar cell
+Exec=@EXEC@
+TryExec=@EXEC@
+Icon=@ICON@
+Terminal=false
+Categories=System;Monitor;
+Keywords=tucunar;cell;water;grid;observability;console;clickhouse;
+StartupNotify=true
+StartupWMClass=tucunar-cell-console

@@ -1,0 +1,390 @@
+# Each capability is a separate Deployment and Service even while its first
+# implementation is a contract stub. This is the seam for customer-owned
+# replacements and independent release/scale decisions.
+apiVersion: v1
+kind: Service
+metadata:
+  name: kingfisher
+spec:
+  selector: {app.kubernetes.io/name: kingfisher}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kingfisher
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: kingfisher}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: kingfisher, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: kingfisher
+          image: ghcr.io/tucunar/kingfisher:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kingbird
+spec:
+  selector: {app.kubernetes.io/name: kingbird}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kingbird
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: kingbird}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: kingbird, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: kingbird
+          image: ghcr.io/tucunar/kingbird:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pigeon
+spec:
+  selector: {app.kubernetes.io/name: pigeon}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pigeon
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: pigeon}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: pigeon, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: pigeon
+          image: ghcr.io/tucunar/pigeon:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom:
+            - configMapRef: {name: tucunar-cell-config}
+            - secretRef: {name: tucunar-cell-secrets}
+            - secretRef: {name: tucunar-channel-secrets, optional: true}
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: woodpecker
+spec:
+  selector: {app.kubernetes.io/name: woodpecker}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: woodpecker
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: woodpecker}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: woodpecker, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: woodpecker
+          image: ghcr.io/tucunar/woodpecker:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: heron
+spec:
+  selector: {app.kubernetes.io/name: heron}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: heron
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: heron}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: heron, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: heron
+          image: ghcr.io/tucunar/heron:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eagle
+spec:
+  selector: {app.kubernetes.io/name: eagle}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eagle
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: eagle}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: eagle, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: eagle
+          image: ghcr.io/tucunar/eagle:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kestrel
+spec:
+  selector: {app.kubernetes.io/name: kestrel}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kestrel
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: kestrel}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: kestrel, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: kestrel
+          image: ghcr.io/tucunar/kestrel:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hawk
+spec:
+  selector: {app.kubernetes.io/name: hawk}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hawk
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: hawk}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: hawk, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: hawk
+          image: ghcr.io/tucunar/hawk:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: raven
+spec:
+  selector: {app.kubernetes.io/name: raven}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: raven
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: raven}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: raven, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: raven
+          image: ghcr.io/tucunar/raven:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phoenix
+spec:
+  selector: {app.kubernetes.io/name: phoenix}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phoenix
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: phoenix}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: phoenix, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: phoenix
+          image: ghcr.io/tucunar/phoenix:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lark
+spec:
+  selector: {app.kubernetes.io/name: lark}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lark
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: lark}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: lark, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: lark
+          image: ghcr.io/tucunar/lark:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: owl
+spec:
+  selector: {app.kubernetes.io/name: owl}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: owl
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: owl}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: owl, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: owl
+          image: ghcr.io/tucunar/owl:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toucan
+spec:
+  selector: {app.kubernetes.io/name: toucan}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toucan
+spec:
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: toucan}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: toucan, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: toucan
+          image: ghcr.io/tucunar/toucan:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom: [{configMapRef: {name: tucunar-cell-config}}, {secretRef: {name: tucunar-cell-secrets}}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shiitake
+spec:
+  selector: {app.kubernetes.io/name: shiitake}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shiitake
+spec:
+  # Hard DeepSeek reservations use a process mutex plus the durable ClickHouse
+  # ledger. Do not scale this deployment horizontally without replacing that
+  # reservation primitive with a distributed one.
+  replicas: 1
+  selector: {matchLabels: {app.kubernetes.io/name: shiitake}}
+  template:
+    metadata: {labels: {app.kubernetes.io/name: shiitake, app.kubernetes.io/part-of: tucunar-cell}}
+    spec:
+      containers:
+        - name: shiitake
+          image: ghcr.io/tucunar/shiitake:dev
+          ports: [{name: http, containerPort: 8080}]
+          env: [{name: PORT, value: "8080"}]
+          envFrom:
+            - configMapRef: {name: tucunar-cell-config}
+            - secretRef: {name: tucunar-cell-secrets}
+            - secretRef: {name: tucunar-cell-ai-secrets, optional: true}
+            - secretRef: {name: tucunar-ai-secrets, optional: true}
+          readinessProbe: {httpGet: {path: /readyz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}

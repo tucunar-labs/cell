@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: Tucunar Cell local console API
+  version: 1.0.0
+  description: Read-only local operator API. Use a loopback forward and a private operator token. JSON fields may be added within this major.
+servers:
+  - url: http://127.0.0.1:18080
+security:
+  - operatorToken: []
+paths:
+  /api/console/events:
+    get:
+      operationId: readConsoleEvents
+      parameters:
+        - name: scenario
+          in: query
+          schema: {type: string, default: mine-major-incident}
+        - name: since
+          in: query
+          schema: {type: string, format: date-time}
+        - name: window_seconds
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 604800, default: 900}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 40000, default: 12000}
+      responses:
+        '200':
+          description: Bounded chronological readings. since is exclusive. Use a small overlap and deduplicate timestamp, entity and name.
+          content:
+            application/json:
+              schema:
+                $ref: ./scada-console-events.schema.json
+        '400': {description: Invalid time or window parameter}
+        '401': {description: Operator token required}
+        '500': {description: Local query failed}
+  /api/overview:
+    get:
+      operationId: readOperationsOverview
+      responses:
+        '200':
+          description: Local activity and active incident summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at, total_signals, source_count, incidents]
+                properties:
+                  generated_at: {type: string, format: date-time}
+                  total_signals: {type: integer, minimum: 0}
+                  source_count: {type: integer, minimum: 0}
+                  incidents: {type: array, items: {type: object}}
+                additionalProperties: true
+        '401': {description: Operator token required}
+        '503': {description: Local storage unavailable}
+  /api/stream:
+    get:
+      operationId: watchSignalChanges
+      responses:
+        '200':
+          description: SSE ready and signals events carry an empty JSON object. A signals event follows a successful append. Coalesce notifications and reread events after connection or reconnection. The stream has no replay cursor.
+          content:
+            text/event-stream:
+              schema: {type: string}
+        '401': {description: Operator token required}
+components:
+  securitySchemes:
+    operatorToken:
+      type: http
+      scheme: bearer

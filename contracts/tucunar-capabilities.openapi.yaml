@@ -1,0 +1,728 @@
+openapi: 3.1.0
+info:
+  title: Tucunar capability interfaces
+  version: 1.0.0
+  description: |
+    Internal, tenant-scoped interfaces for Tucunar capabilities. These routes
+    describe the compatibility boundary between independently deployed nodes
+    in a Tenant Cell. The internal wire contract is Protobuf over Connect;
+    this OpenAPI document remains useful for fixtures, external adapters and
+    the transitional JSON bootstrap endpoint.
+servers:
+  - url: http://127.0.0.1:8080/v1
+    description: Local cell interface
+  - url: https://cell.example.invalid/v1
+    description: Placeholder for a deployed cell
+security:
+  - bearerAuth: []
+paths:
+  /capabilities/swift/ingest:
+    post:
+      operationId: swiftIngest
+      summary: Normalize a provider or protocol payload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SwiftIngestRequest' }
+      responses:
+        '202':
+          description: Normalization completed or accepted for local processing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SwiftIngestResponse' }
+  /capabilities/canary/evaluate:
+    post:
+      operationId: canaryEvaluate
+      summary: Evaluate named rules over a ClickHouse lookback window
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CanaryEvaluateRequest' }
+      responses:
+        '200':
+          description: Evaluation result reconstructed from durable data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CanaryEvaluateResponse' }
+  /capabilities/kingfisher/probe:
+    post:
+      operationId: kingfisherProbe
+      summary: Measure target reachability and transport health
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/KingfisherProbeRequest' }
+      responses:
+        '200':
+          description: Probe result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KingfisherProbeResponse' }
+  /capabilities/kingbird/correlate:
+    post:
+      operationId: kingbirdCorrelate
+      summary: Correlate observations into probable causes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/KingbirdCorrelateRequest' }
+      responses:
+        '200':
+          description: Correlation hypotheses
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KingbirdCorrelateResponse' }
+  /capabilities/pigeon/dispatch:
+    post:
+      operationId: pigeonDispatch
+      summary: Deliver an approved incident to configured channels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PigeonDispatchRequest' }
+      responses:
+        '202':
+          description: Delivery attempts queued or completed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PigeonDispatchResponse' }
+  /capabilities/woodpecker/validate:
+    post:
+      operationId: woodpeckerValidate
+      summary: Validate records against a data contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WoodpeckerValidateRequest' }
+      responses:
+        '200':
+          description: Validation report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WoodpeckerValidateResponse' }
+  /capabilities/heron/reconcile:
+    post:
+      operationId: heronReconcile
+      summary: Reconcile facts from multiple sources
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HeronReconcileRequest' }
+      responses:
+        '200':
+          description: Reconciliation report
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HeronReconcileResponse' }
+  /capabilities/eagle/extract:
+    post:
+      operationId: eagleExtract
+      summary: Extract structured facts from an artifact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EagleExtractRequest' }
+      responses:
+        '200':
+          description: Extracted facts with provenance
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EagleExtractResponse' }
+  /capabilities/kestrel/authorize:
+    post:
+      operationId: kestrelAuthorize
+      summary: Authorize a principal action on a resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/KestrelAuthorizeRequest' }
+      responses:
+        '200':
+          description: Authorization decision
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KestrelAuthorizeResponse' }
+  /capabilities/hawk/assess:
+    post:
+      operationId: hawkAssess
+      summary: Assess asset exposure and control coverage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HawkAssessRequest' }
+      responses:
+        '200':
+          description: Exposure findings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HawkAssessResponse' }
+  /capabilities/raven/evidence:
+    post:
+      operationId: ravenEvidence
+      summary: Build an incident evidence timeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RavenEvidenceRequest' }
+      responses:
+        '200':
+          description: Evidence timeline
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RavenEvidenceResponse' }
+  /capabilities/phoenix/recover:
+    post:
+      operationId: phoenixRecover
+      summary: Plan or verify recovery work
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PhoenixRecoverRequest' }
+      responses:
+        '200':
+          description: Recovery state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhoenixRecoverResponse' }
+  /capabilities/lark/handoff:
+    post:
+      operationId: larkHandoff
+      summary: Record ownership and workflow transitions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LarkHandoffRequest' }
+      responses:
+        '200':
+          description: Workflow state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LarkHandoffResponse' }
+  /capabilities/owl/decide:
+    post:
+      operationId: owlDecide
+      summary: Produce a bounded decision recommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OwlDecideRequest' }
+      responses:
+        '200':
+          description: Decision recommendation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OwlDecideResponse' }
+  /capabilities/toucan/compose:
+    post:
+      operationId: toucanCompose
+      summary: Compose capability outputs into a workflow outcome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ToucanComposeRequest' }
+      responses:
+        '200':
+          description: Composed workflow outcome
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ToucanComposeResponse' }
+  /capabilities/signal-store/append:
+    post:
+      operationId: signalStoreAppend
+      summary: Append canonical signals to the cell Signal Store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignalStoreAppendRequest' }
+      responses:
+        '202':
+          description: Append receipt
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SignalStoreAppendResponse' }
+  /capabilities/signal-store/query:
+    post:
+      operationId: signalStoreQuery
+      summary: Query a named, tenant-scoped analytical view
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignalStoreQueryRequest' }
+      responses:
+        '200':
+          description: Query result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SignalStoreQueryResponse' }
+  /capabilities/ai-reasoning/reason:
+    post:
+      operationId: aiReasoning
+      summary: Generate a tenant-scoped recommendation from redacted context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AIReasoningRequest' }
+      responses:
+        '200':
+          description: Structured reasoning result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AIReasoningResponse' }
+  /capabilities/ai-reasoning/console-story:
+    post:
+      operationId: aiConsoleStory
+      summary: Turn bounded incident facts into an operator story and flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AIConsoleStoryRequest' }
+      responses:
+        '200':
+          description: Structured operator story with a derived Mermaid causal sequence
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AIConsoleStoryResponse' }
+        '429':
+          description: Hard DeepSeek budget exhausted for the case or rolling 24-hour cell window
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CapabilityResult' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: cell-service-token
+      description: Token scoped to one organization, cell, capability, and operation.
+  schemas:
+    RequestContext:
+      type: object
+      required: [contract_version, request_id, organization_id, cell_id, node_id]
+      properties:
+        contract_version: { type: string, const: '1.0' }
+        request_id: { type: string, minLength: 1, maxLength: 128 }
+        correlation_id: { type: string, maxLength: 128 }
+        idempotency_key: { type: string, maxLength: 256 }
+        organization_id: { type: string, minLength: 1, maxLength: 128 }
+        cell_id: { type: string, minLength: 1, maxLength: 128 }
+        node_id: { type: string, minLength: 1, maxLength: 128 }
+    CapabilityResult:
+      type: object
+      required: [contract_version, request_id, capability, operation, status]
+      properties:
+        contract_version: { type: string, const: '1.0' }
+        request_id: { type: string }
+        capability: { type: string }
+        operation: { type: string }
+        status: { type: string, enum: [accepted, completed, rejected, not_implemented] }
+        error_code: { type: string }
+        error_message: { type: string }
+    CanonicalSignal:
+      type: object
+      required: [id, source, tenant_id, entity_id, kind, name, occurred_at]
+      properties:
+        id: { type: string }
+        external_id: { type: string }
+        source: { type: string }
+        tenant_id: { type: string }
+        entity_id: { type: string }
+        site_id: { type: string }
+        kind: { type: string, enum: [event, measurement, state, heartbeat] }
+        name: { type: string }
+        value: { type: number }
+        unit: { type: string }
+        dimensions: { type: object, additionalProperties: { type: string } }
+        payload: { type: object, additionalProperties: true }
+        occurred_at: { type: string, format: date-time }
+    SwiftIngestRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [source, protocol, payload]
+          properties:
+            source: { type: string }
+            protocol: { type: string, description: Provider or transport name. }
+            payload: { type: object, additionalProperties: true }
+            received_at: { type: string, format: date-time }
+    SwiftIngestResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            signals:
+              type: array
+              items: { $ref: '#/components/schemas/CanonicalSignal' }
+            rejected:
+              type: array
+              items: { $ref: '#/components/schemas/RejectedRecord' }
+    CanaryEvaluateRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [window_seconds, rule_ids]
+          properties:
+            window_seconds: { type: integer, minimum: 1 }
+            rule_ids: { type: array, items: { type: string } }
+    CanaryEvaluateResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            metrics: { type: object, additionalProperties: { type: number } }
+            incidents: { type: array, items: { $ref: '#/components/schemas/IncidentTransition' } }
+    KingfisherProbeRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [target]
+          properties:
+            target: { type: string }
+            protocol: { type: string }
+            timeout_ms: { type: integer, minimum: 1 }
+            observations: { type: array, items: { type: object, additionalProperties: true } }
+    KingfisherProbeResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            probe_status: { type: string }
+            availability_percent: { type: number }
+            latency_ms: { type: number }
+            loss_percent: { type: number }
+    KingbirdCorrelateRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          properties:
+            incident_ids: { type: array, items: { type: string } }
+            signal_refs: { type: array, items: { type: string } }
+            topology_refs: { type: array, items: { type: string } }
+    KingbirdCorrelateResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            hypotheses: { type: array, items: { $ref: '#/components/schemas/Hypothesis' } }
+    PigeonDispatchRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [incident_id, channels]
+          properties:
+            incident_id: { type: string }
+            channels: { type: array, items: { type: string } }
+            message: { type: string }
+            payload: { type: object, additionalProperties: true }
+    PigeonDispatchResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            delivery_ids: { type: array, items: { type: string } }
+            attempts: { type: integer, minimum: 0 }
+    WoodpeckerValidateRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [schema_ref, records]
+          properties:
+            schema_ref: { type: string }
+            records: { type: array, items: { type: object, additionalProperties: true } }
+    WoodpeckerValidateResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            valid: { type: boolean }
+            records_checked: { type: integer, minimum: 0 }
+            violations: { type: array, items: { $ref: '#/components/schemas/Violation' } }
+    HeronReconcileRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [sources, join_key]
+          properties:
+            sources: { type: array, items: { type: string } }
+            join_key: { type: string }
+            window_start: { type: string, format: date-time }
+            window_end: { type: string, format: date-time }
+    HeronReconcileResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            matched: { type: integer, minimum: 0 }
+            mismatched: { type: integer, minimum: 0 }
+            discrepancies: { type: array, items: { $ref: '#/components/schemas/Discrepancy' } }
+    EagleExtractRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [artifact_uri, media_type, sha256]
+          properties:
+            artifact_uri: { type: string }
+            media_type: { type: string }
+            sha256: { type: string, minLength: 64, maxLength: 64 }
+            extraction_profile: { type: string }
+    EagleExtractResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            facts: { type: array, items: { $ref: '#/components/schemas/Fact' } }
+    KestrelAuthorizeRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [principal, action, resource]
+          properties:
+            principal: { type: string }
+            action: { type: string }
+            resource: { type: string }
+            context: { type: object, additionalProperties: true }
+    KestrelAuthorizeResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            allowed: { type: boolean }
+            reasons: { type: array, items: { type: string } }
+            policy_version: { type: string }
+    HawkAssessRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [assets]
+          properties:
+            assets: { type: array, items: { type: object, additionalProperties: true } }
+            controls: { type: array, items: { type: object, additionalProperties: true } }
+    HawkAssessResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            findings: { type: array, items: { $ref: '#/components/schemas/Finding' } }
+    RavenEvidenceRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [incident_id]
+          properties:
+            incident_id: { type: string }
+            event_refs: { type: array, items: { type: string } }
+            evidence_refs: { type: array, items: { type: string } }
+    RavenEvidenceResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            timeline: { type: array, items: { type: object, additionalProperties: true } }
+            evidence_refs: { type: array, items: { type: string } }
+    PhoenixRecoverRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [incident_id, plan_id, action]
+          properties:
+            incident_id: { type: string }
+            plan_id: { type: string }
+            action: { type: string, enum: [plan, start, verify, cancel] }
+            status: { type: string }
+    PhoenixRecoverResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            state: { type: string }
+            next_action: { type: string }
+            evidence_refs: { type: array, items: { type: string } }
+    LarkHandoffRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [task_id, action]
+          properties:
+            incident_id: { type: string }
+            task_id: { type: string }
+            owner: { type: string }
+            action: { type: string, enum: [assign, acknowledge, handoff, complete, reopen] }
+            note: { type: string }
+    LarkHandoffResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            state: { type: string }
+            owner: { type: string }
+            transition_id: { type: string }
+    OwlDecideRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [question, evidence_refs]
+          properties:
+            question: { type: string }
+            evidence_refs: { type: array, items: { type: string } }
+            constraints: { type: array, items: { type: string } }
+    OwlDecideResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            decision: { type: string }
+            alternatives: { type: array, items: { type: string } }
+            rationale: { type: string }
+            confidence: { type: number, minimum: 0, maximum: 1 }
+    ToucanComposeRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [workflow_id, inputs]
+          properties:
+            workflow_id: { type: string }
+            inputs: { type: object, additionalProperties: true }
+            requested_outputs: { type: array, items: { type: string } }
+    ToucanComposeResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            state: { type: string }
+            outputs: { type: object, additionalProperties: true }
+            next_actions: { type: array, items: { type: string } }
+    SignalStoreAppendRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [signals]
+          properties:
+            signals: { type: array, items: { $ref: '#/components/schemas/CanonicalSignal' } }
+    SignalStoreAppendResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            accepted: { type: integer, minimum: 0 }
+            deduplicated: { type: integer, minimum: 0 }
+    SignalStoreQueryRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [view, window_start, window_end]
+          properties:
+            view: { type: string, enum: [signals, metrics, incidents, rollups] }
+            window_start: { type: string, format: date-time }
+            window_end: { type: string, format: date-time }
+            filters: { type: object, additionalProperties: { type: string } }
+            limit: { type: integer, minimum: 1, maximum: 10000 }
+    SignalStoreQueryResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            rows: { type: array, items: { type: object, additionalProperties: true } }
+            truncated: { type: boolean }
+    AIReasoningRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [task, context, model_policy]
+          properties:
+            task: { type: string }
+            context: { type: object, additionalProperties: true }
+            model_policy: { type: object, additionalProperties: true }
+    AIReasoningResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          properties:
+            answer: { type: string }
+            citations: { type: array, items: { type: string } }
+            confidence: { type: number, minimum: 0, maximum: 1 }
+            action_required: { type: boolean }
+    AIConsoleStoryRequest:
+      allOf:
+        - { $ref: '#/components/schemas/RequestContext' }
+        - type: object
+          required: [scenario_id, facts]
+          properties:
+            scenario_id: { type: string, minLength: 1, maxLength: 256 }
+            facts: { type: object, additionalProperties: true }
+    AIConsoleStoryResponse:
+      allOf:
+        - { $ref: '#/components/schemas/CapabilityResult' }
+        - type: object
+          required: [story]
+          properties:
+            story: { type: object, additionalProperties: true }
+    RejectedRecord:
+      type: object
+      required: [record_ref, reason]
+      properties:
+        record_ref: { type: string }
+        reason: { type: string }
+    IncidentTransition:
+      type: object
+      required: [incident_key, status]
+      properties:
+        incident_key: { type: string }
+        status: { type: string, enum: [open, update, recovered] }
+        rule_id: { type: string }
+        observed_value: { type: number }
+        threshold: { type: number }
+    Hypothesis:
+      type: object
+      required: [cause, confidence]
+      properties:
+        cause: { type: string }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        evidence_refs: { type: array, items: { type: string } }
+    Violation:
+      type: object
+      required: [path, message]
+      properties:
+        path: { type: string }
+        message: { type: string }
+        severity: { type: string }
+    Discrepancy:
+      type: object
+      required: [join_value, reason]
+      properties:
+        join_value: { type: string }
+        reason: { type: string }
+        source_refs: { type: array, items: { type: string } }
+    Fact:
+      type: object
+      required: [key, value, confidence]
+      properties:
+        key: { type: string }
+        value: {}
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        provenance: { type: array, items: { type: string } }
+    Finding:
+      type: object
+      required: [finding_id, severity, title]
+      properties:
+        finding_id: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        title: { type: string }
+        asset_refs: { type: array, items: { type: string } }

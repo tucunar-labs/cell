@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tucunar-cell
+resources:
+  - ../../base
+secretGenerator:
+  - name: tucunar-cell-secrets
+    envs:
+      - secret.env
+generatorOptions:
+  disableNameSuffixHash: true
+patches:
+  - path: resources-small.patch.yaml

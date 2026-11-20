@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tucunar-cell
+resources:
+  - ../../base
+secretGenerator:
+  - name: tucunar-cell-secrets
+    envs: [secret.env]
+configMapGenerator:
+  - name: tucunar-cell-rules
+    files: [rules.json]
+generatorOptions:
+  disableNameSuffixHash: true
+patches:
+  - path: ../single-node/resources-small.patch.yaml
+  - path: ../dev/canary-rules.patch.yaml
+  - target:
+      kind: Deployment
+      name: (kingfisher|kingbird|pigeon|woodpecker|heron|eagle|kestrel|hawk|raven|phoenix|lark|owl|toucan|shiitake)
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 0
+  - target:
+      kind: ConfigMap
+      name: tucunar-cell-config
+    patch: |-
+      - op: add
+        path: /data/AI_REASONING_ENABLED
+        value: "0"
+      - op: add
+        path: /data/CANARY_DASHBOARD_PUBLIC
+        value: "0"
+      - op: add
+        path: /data/CANARY_QUERY_ENABLED
+        value: "1"
+      - op: add
+        path: /data/CANARY_EVALUATION_INTERVAL_SECONDS
+        value: "5"

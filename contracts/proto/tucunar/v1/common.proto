@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package tucunar.v1;
+
+option go_package = "github.com/tucunar/contracts/gen/tucunar/v1;tucunarv1";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// TenantContext is mandatory on every bird-to-bird call. A replacement
+// implementation must preserve these fields and their authorization meaning.
+message TenantContext {
+  string contract_version = 1;
+  string request_id = 2;
+  string correlation_id = 3;
+  string idempotency_key = 4;
+  string organization_id = 5;
+  string cell_id = 6;
+  string node_id = 7;
+}
+
+message Signal {
+  string id = 1;
+  string external_id = 2;
+  string organization_id = 3;
+  string canary_id = 4;
+  string site_id = 5;
+  string source = 6;
+  string tenant_id = 7;
+  string entity_id = 8;
+  string kind = 9;
+  string name = 10;
+  double value = 11;
+  string unit = 12;
+  map<string, string> dimensions = 13;
+  google.protobuf.Struct payload = 14;
+  google.protobuf.Timestamp occurred_at = 15;
+}
+
+message CapabilityRequest {
+  TenantContext context = 1;
+  string capability = 2;
+  string operation = 3;
+  google.protobuf.Struct payload = 4;
+}
+
+message CapabilityResponse {
+  TenantContext context = 1;
+  string capability = 2;
+  string operation = 3;
+  string status = 4;
+  google.protobuf.Struct payload = 5;
+  string error_code = 6;
+  string error_message = 7;
+}

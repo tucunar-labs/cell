@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg viewBox="0 0 176 122" version="1.1" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+  <style type="text/css"><![CDATA[
+    .glyph .shape { fill: none; stroke: #102033; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .glyph .accent { stroke: #5c82b1; }
+    .glyph .warm { stroke: #d08351; }
+  ]]></style>
+  <g class="glyph" id="toucan-mark">
+    <!-- Two offset modules compose a moving workflow. -->
+    <rect class="shape warm" x="59" y="48" width="20" height="31" rx="8" id="left-module" />
+    <rect class="shape accent" x="97" y="35" width="20" height="31" rx="8" id="right-module" />
+    <path class="shape" d="M79 64H88V51H97" id="module-connector" />
+  </g>
+</svg>

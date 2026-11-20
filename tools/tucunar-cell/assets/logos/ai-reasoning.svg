@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 176 122"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="ai-reasoning.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="7.4344262"
+     inkscape:cx="88.036384"
+     inkscape:cy="65.842337"
+     inkscape:window-width="1920"
+     inkscape:window-height="1139"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g3" />
+    <defs>
+    <symbol
+       id="ai-reasoning"
+       viewBox="0 0 176 122">
+      <g
+         class="glyph"
+         id="g80">
+        <path
+           class="mask"
+           d="M64 30H112Q128 30 128 46V67Q128 83 112 83H82L64 99L70 83H64Q48 83 48 67V46Q48 30 64 30Z"
+           id="path78" />
+        <path
+           class="bubble"
+           d="M64 30H112Q128 30 128 46V67Q128 83 112 83H82L64 99L70 83H64Q48 83 48 67V46Q48 30 64 30Z"
+           id="path79" />
+        <path
+           class="solid accent"
+           d="M70 59A4 4 0 1 0 70.01 59M88 59A4 4 0 1 0 88.01 59M106 59A4 4 0 1 0 106.01 59"
+           id="path80" />
+      </g>
+    </symbol>
+  </defs>
+<style
+     type="text/css"
+     id="style1"><![CDATA[
+    .canvas { fill: #f1f4f5; }
+    .panel { fill: #e7edf0; stroke: #d9e2e7; stroke-width: 1; }
+    .panel.dark { fill: #0b1424; stroke: #2c405c; }
+    .title { fill: #102033; font-family: Geist, Arial, sans-serif; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+    .dark-title, .dark-role, .dark-description { fill: #f1f4f5; }
+    .role { fill: #62758a; font-family: monospace; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
+    .description { fill: #62758a; font-family: Geist, Arial, sans-serif; font-size: 12px; font-weight: 400; }
+    .glyph .mask { fill: none; stroke: #e7edf0; stroke-width: 21; stroke-linecap: round; stroke-linejoin: round; }
+    .glyph.dark .mask { stroke: #0b1424; }
+    .glyph .shape { fill: none; stroke: #102033; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .glyph.dark .shape { stroke: #f1f4f5; }
+    .glyph .accent { stroke: #5c82b1; }
+    .glyph .warm { stroke: #d08351; }
+    .glyph .triangle { fill: #e7edf0; stroke: #d08351; stroke-width: 9; stroke-linejoin: round; }
+    .glyph.dark .triangle { fill: #0b1424; }
+    .glyph .circle-cut { fill: #e7edf0; stroke: #d08351; stroke-width: 9; stroke-linejoin: round; }
+    .glyph .cutout { fill: #e7edf0; stroke: none; }
+    .glyph .bubble { fill: #e7edf0; stroke: #7d77b5; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .glyph .solid { fill: #102033; stroke: none; }
+    .glyph .solid.accent { fill: #5c82b1; }
+    .sheet-label { fill: #62758a; font-family: monospace; font-size: 9px; letter-spacing: .14em; }
+  ]]></style>
+
+  <g
+     class="glyph"
+     id="g3">
+    <path
+       class="bubble"
+       d="m 64,30 h 48 q 16,0 16,16 v 21 q 0,16 -16,16 H 82 L 64,99 70,83 H 64 Q 48,83 48,67 V 46 Q 48,30 64,30 Z"
+       id="path2"
+       style="fill:none" />
+    <path
+       class="solid accent"
+       d="m 70,55 a 4,4 0 1 0 0.01,0 M 88,55 a 4,4 0 1 0 0.01,0 M 106,55 a 4,4 0 1 0 0.01,0"
+       id="path3" />
+  </g>
+</svg>

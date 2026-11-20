@@ -1,0 +1,306 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: swift
+spec:
+  selector:
+    app.kubernetes.io/name: swift
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: swift
+  labels:
+    app.kubernetes.io/name: swift
+    app.kubernetes.io/part-of: tucunar-cell
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: swift
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: swift
+        app.kubernetes.io/part-of: tucunar-cell
+    spec:
+      containers:
+        - name: swift
+          image: ghcr.io/tucunar/swift:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+          envFrom:
+            - configMapRef:
+                name: tucunar-cell-config
+            - secretRef:
+                name: tucunar-cell-secrets
+            - secretRef:
+                name: tucunar-source-secrets
+                optional: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: canary-evaluator
+spec:
+  selector:
+    app.kubernetes.io/name: canary-evaluator
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: canary-evaluator
+  labels:
+    app.kubernetes.io/name: canary-evaluator
+    app.kubernetes.io/part-of: tucunar-cell
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: canary-evaluator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: canary-evaluator
+        app.kubernetes.io/part-of: tucunar-cell
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: canary-evaluator
+          image: ghcr.io/tucunar/canary-evaluator:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+          envFrom:
+            - configMapRef:
+                name: tucunar-cell-config
+            - secretRef:
+                name: tucunar-cell-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: condor
+spec:
+  selector:
+    app.kubernetes.io/name: condor
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: condor
+  labels:
+    app.kubernetes.io/name: condor
+    app.kubernetes.io/part-of: tucunar-cell
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: condor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: condor
+        app.kubernetes.io/part-of: tucunar-cell
+    spec:
+      containers:
+        - name: condor
+          image: ghcr.io/tucunar/condor:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+          envFrom:
+            - configMapRef:
+                name: tucunar-cell-config
+            - secretRef:
+                name: tucunar-cell-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hummingbird
+spec:
+  selector:
+    app.kubernetes.io/name: hummingbird
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hummingbird
+  labels:
+    app.kubernetes.io/name: hummingbird
+    app.kubernetes.io/part-of: tucunar-cell
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hummingbird
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hummingbird
+        app.kubernetes.io/part-of: tucunar-cell
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: hummingbird
+          image: ghcr.io/tucunar/hummingbird:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: TUCUNAR_CELL_STATE_FILE
+              value: /var/lib/hummingbird/tucunar-cell-state.json
+          envFrom:
+            - configMapRef:
+                name: tucunar-cell-config
+            - secretRef:
+                name: tucunar-cell-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: hummingbird-state
+              mountPath: /var/lib/hummingbird
+      volumes:
+        - name: hummingbird-state
+          persistentVolumeClaim:
+            claimName: hummingbird-state
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hummingbird-state
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: tucunar-local
+  resources:
+    requests:
+      storage: 1Gi

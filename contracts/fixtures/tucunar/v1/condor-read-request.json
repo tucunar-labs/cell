@@ -1,0 +1,15 @@
+{
+  "context":  {
+    "contractVersion":  "1.0",
+    "requestId":  "request-golden",
+    "idempotencyKey":  "read:canary-evaluator",
+    "organizationId":  "org-golden",
+    "cellId":  "cell-golden",
+    "nodeId":  "node-golden"
+  },
+  "stream":  "signals",
+  "limit":  1000,
+  "until":  "2026-09-06T12:00:00Z",
+  "consumer":  "canary-evaluator",
+  "since":  "2026-09-06T11:45:00Z"
+}

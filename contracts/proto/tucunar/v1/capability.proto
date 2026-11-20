@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package tucunar.v1;
+
+option go_package = "github.com/tucunar/contracts/gen/tucunar/v1;tucunarv1";
+
+import "tucunar/v1/common.proto";
+
+// Every bird may be replaced by a customer-owned implementation that speaks
+// this Connect-compatible Protobuf service. Operation payloads remain defined
+// by the versioned capability schemas, while this envelope stays stable.
+service CapabilityService {
+  rpc Execute(CapabilityRequest) returns (CapabilityResponse);
+}

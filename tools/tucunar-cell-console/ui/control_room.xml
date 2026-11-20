@@ -1,0 +1,99 @@
+<Window Title="Tucunar Cell · Factory" Width="1480" Height="920" MinWidth="1180" MinHeight="760" Background="#0B0E14">
+  <HBox Spacing="0" Slot.Fill="1">
+    <VBox Width="176" Spacing="0" Padding="16,16" Background="#0E1219">
+      <VBox Spacing="2">
+        <Label Text="TUCUNAR" TextSize="17" Color="#EDF1F7"/>
+        <Label Text="FACTORY SYSTEMS" TextSize="9" Color="#67748A"/>
+      </VBox>
+      <Border Height="1" Background="#1B2230" Slot.Padding="0,14"/>
+      <VBox Spacing="2" Slot.Padding="0,14,0,0">
+        <Button Name="nav_grid" Text="◉  Grid" Style="Flat" OnClicked="nav0"/>
+        <Button Name="nav_analysis" Text="   Analysis" Style="Flat" OnClicked="nav1"/>
+      </VBox>
+      <Label Text="SYSTEMS" TextSize="9" Color="#67748A" Slot.Padding="0,18,0,6"/>
+      <VBox Spacing="2">
+        <Button Name="system_water" Text="● Water network" Style="Flat" OnClicked="system0"/>
+        <Button Name="system_air" Text="  Compressed air" Style="Flat" OnClicked="system1"/>
+        <Button Name="system_electrical" Text="  Electrical" Style="Flat" OnClicked="system2"/>
+        <Button Name="system_grinding" Text="  Grinding &amp; flotation" Style="Flat" OnClicked="system3"/>
+      </VBox>
+      <Label Text="DATA SOURCE" TextSize="9" Color="#67748A" Slot.Padding="0,18,0,6"/>
+      <VBox Spacing="2">
+        <Button Name="proto_mqtt" Text="● MQTT" Style="Flat" OnClicked="proto0"/>
+        <Button Name="proto_modbus" Text="   Modbus TCP" Style="Flat" OnClicked="proto1"/>
+        <Button Name="proto_opcua" Text="   OPC UA" Style="Flat" OnClicked="proto2"/>
+        <Button Name="proto_mcp" Text="   MCP" Style="Flat" OnClicked="proto3"/>
+      </VBox>
+      <VBox Slot.Fill="1"/>
+      <VBox Spacing="5" Slot.Padding="0,12,0,0">
+        <Label Text="CELL" TextSize="9" Color="#67748A"/>
+        <HBox Spacing="6">
+          <Label Name="cell_dot" Text="●" TextSize="9" Color="#4ADE80"/>
+          <Label Name="cell_state" Text="Connect…" TextSize="12" Color="#D7DEE8"/>
+        </HBox>
+        <Label Name="cell_components" Text="—" TextSize="10" Color="#67748A"/>
+      </VBox>
+      <Label Text="SIMULATED PLANT · NO HARDWARE" TextSize="8" Color="#8A6D3B" Wrap="true" Slot.Padding="0,12,0,0"/>
+    </VBox>
+
+    <VBox Slot.Fill="1" Spacing="0" Padding="22,16" Background="#0B0E14">
+      <HBox Spacing="12" Slot.VAlign="Center">
+        <VBox Slot.Fill="1" Spacing="1">
+          <Label Name="view_crumb" Text="NORTH RESERVOIR / WATER DISTRIBUTION" TextSize="9" Color="#67748A"/>
+          <Label Name="view_title" Text="Factory" TextSize="23" Color="#F2F5FA"/>
+        </VBox>
+        <Border Background="#121722" BorderColor="#1E2635" BorderWidth="1" CornerRadius="18" Padding="11,5">
+          <HBox Spacing="7">
+            <Label Name="status_dot" Text="●" TextSize="9" Color="#4ADE80"/>
+            <Label Name="status_pill" Text="connecting" TextSize="11" Color="#C7D0DC"/>
+          </HBox>
+        </Border>
+      </HBox>
+
+      <Switcher Name="workspace" Index="0" Slot.Fill="1" Slot.Padding="0,14,0,0">
+        <VBox Spacing="12">
+          <HBox Spacing="12" Slot.Fill="1">
+            <Border Class="card" Width="190" Padding="0" CornerRadius="10"><Custom Name="asset_list"/></Border>
+            <Border Class="card" Slot.Fill="1" Padding="0" CornerRadius="10">
+              <Custom Name="grid_map"/>
+            </Border>
+            <VBox Width="290" Spacing="12"><Border Class="card" Slot.Fill="1" Padding="0" CornerRadius="10"><Custom Name="asset_detail"/></Border><Border Class="card" Height="180" Padding="0" CornerRadius="10"><Custom Name="alerts_list"/></Border></VBox>
+          </HBox>
+          <HBox Spacing="12" Height="198">
+            <Border Class="card" Slot.Fill="1" Padding="0" CornerRadius="10">
+              <Custom Name="chart_pressure"/>
+            </Border>
+            <Border Class="card" Slot.Fill="1" Padding="0" CornerRadius="10">
+              <Custom Name="chart_divergence"/>
+            </Border>
+            <Border Class="card" Slot.Fill="1" Padding="0" CornerRadius="10">
+              <Custom Name="chart_valve"/>
+            </Border>
+            <Border Class="card" Slot.Fill="1" Padding="0" CornerRadius="10">
+              <Custom Name="chart_reservoir"/>
+            </Border>
+          </HBox>
+        </VBox>
+
+        <VBox Spacing="12">
+          <HBox Spacing="12" Slot.Fill="1">
+            <Border Class="card" Slot.Fill="1" Padding="0" CornerRadius="10">
+              <Custom Name="chart_history"/>
+            </Border>
+            <Border Class="card" Width="344" Padding="0" CornerRadius="10">
+              <Custom Name="stats_panel"/>
+            </Border>
+          </HBox>
+          <Border Class="card" Height="188" Padding="0" CornerRadius="10">
+            <Custom Name="findings"/>
+          </Border>
+        </VBox>
+      </Switcher>
+
+      <HBox Slot.Padding="0,10,0,0">
+        <Label Name="message" Text="Read-only view of the local Cell API" TextSize="9" Color="#67748A" Slot.Fill="1"/>
+        <Label Text="LOCAL / OFFLINE-CAPABLE" TextSize="9" Color="#5A6678"/>
+      </HBox>
+    </VBox>
+  </HBox>
+</Window>

@@ -1,0 +1,1025 @@
+openapi: 3.0.3
+info:
+  title: Tucunar App–Node Contract
+  version: 1.0.0
+  description: |
+    Integration contract for the Tucunar control API and the generic local
+    signal ingestion contract. The control-plane routes remain documentary;
+    canary-node implements the source-neutral signal routes locally. Raw
+    Shopify payloads are accepted only by the dedicated Shopify connector.
+servers:
+  - url: https://api.tucunar.com
+    description: Tucunar API production control API base URL
+  - url: http://127.0.0.1:8080
+    description: Local Canary Node signal API base URL
+tags:
+  - name: signal ingestion
+  - name: enrollment
+  - name: node reporting
+paths:
+  /v1/signals:
+    servers:
+      - url: http://127.0.0.1:8080
+        description: Local Canary Node signal API base URL
+    post:
+      tags: [signal ingestion]
+      operationId: ingestSignal
+      summary: Ingest one source-neutral operational signal
+      description: |
+        Local Canary Node endpoint for internal systems and connectors. The
+        server assigns an id when omitted and persists the normalized signal
+        in ClickHouse.
+      security:
+        - signalBearer: []
+        - signalApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Signal'
+      responses:
+        '202':
+          description: Signal accepted for durable ClickHouse insertion.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalAcceptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /v1/signals/batch:
+    servers:
+      - url: http://127.0.0.1:8080
+        description: Local Canary Node signal API base URL
+    post:
+      tags: [signal ingestion]
+      operationId: ingestSignalBatch
+      summary: Ingest a bounded batch of source-neutral operational signals
+      security:
+        - signalBearer: []
+        - signalApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignalBatchRequest'
+      responses:
+        '202':
+          description: Batch accepted for durable ClickHouse insertion.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalBatchAcceptedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /v1/nodes/enroll:
+    post:
+      tags: [enrollment]
+      operationId: enrollNode
+      summary: Enroll one node instance for a pre-created canary
+      description: |
+        The one-time enrollment token is scoped by the control plane to the
+        organization, canary and deployment mode. A repeated request with the
+        same Idempotency-Key and body may replay the original response.
+      security:
+        - enrollmentBearer: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentRequest'
+            example:
+              contract_version: '1.0'
+              organization_id: 9b6f8e2f-5fb6-4ef1-9818-0f0b6d5d8f22
+              canary_id: 1b3c29d1-e8d7-4d1e-8a0c-2f1ecf2cb7b3
+              deployment_mode: on_premise
+              node_instance_id: e0e2b063-4a65-47b3-a8d6-887e57ef2aa1
+              node_version: 0.1.0
+              capabilities: [shopify_webhooks, clickhouse_rollups, incidents]
+      responses:
+        '201':
+          description: Node enrolled and access token issued
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+        '200':
+          description: Idempotent replay of a successful enrollment
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '502':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+        '504':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+
+  /v1/canaries/{canary_id}/heartbeat:
+    post:
+      tags: [node reporting]
+      operationId: publishHeartbeat
+      summary: Publish node and component health
+      security:
+        - nodeBearer: []
+      parameters:
+        - $ref: '#/components/parameters/CanaryId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequest'
+            example:
+              contract_version: '1.0'
+              organization_id: 9b6f8e2f-5fb6-4ef1-9818-0f0b6d5d8f22
+              canary_id: 1b3c29d1-e8d7-4d1e-8a0c-2f1ecf2cb7b3
+              node_id: f3a4dd93-9ff4-4f6d-9e14-1e2f7ea0c4b0
+              sent_at: '2026-08-30T16:00:00Z'
+              node_version: 0.1.0
+              status: ready
+              uptime_seconds: 86400
+              components:
+                http_ingest: ready
+                clickhouse: ready
+                evaluator: running
+              data:
+                lookback_seconds: 900
+                last_event_at: '2026-08-30T15:59:58.431Z'
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '502':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+        '504':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+
+  /v1/canaries/{canary_id}/rollups:
+    post:
+      tags: [node reporting]
+      operationId: publishRollup
+      summary: Publish an operational ClickHouse window summary
+      description: |
+        A rollup contains derived counts and rates only. It does not contain
+        Shopify payloads, headers, credentials or customer data.
+      security:
+        - nodeBearer: []
+      parameters:
+        - $ref: '#/components/parameters/CanaryId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RollupRequest'
+            example:
+              contract_version: '1.0'
+              organization_id: 9b6f8e2f-5fb6-4ef1-9818-0f0b6d5d8f22
+              canary_id: 1b3c29d1-e8d7-4d1e-8a0c-2f1ecf2cb7b3
+              node_id: f3a4dd93-9ff4-4f6d-9e14-1e2f7ea0c4b0
+              rollup_id: 52fbec18-e8e3-4bb0-a9d7-2b42f918f75c
+              generated_at: '2026-08-30T16:00:02Z'
+              window:
+                start: '2026-08-30T15:45:02Z'
+                end: '2026-08-30T16:00:02Z'
+                seconds: 900
+              rule_set_version: conversion-v1
+              summary:
+                total_shops: 2
+                at_risk_shops: 1
+                checkout_started: 200
+                payment_success: 35
+                conversion_rate: 0.175
+              shops:
+                - shop_id: shop_id_1
+                  checkout_started: 100
+                  payment_success: 10
+                  conversion_rate: 0.1
+                  status: at_risk
+                - shop_id: shop_id_2
+                  checkout_started: 100
+                  payment_success: 25
+                  conversion_rate: 0.25
+                  status: healthy
+      responses:
+        '202':
+          $ref: '#/components/responses/Accepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '502':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+        '504':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+
+  /v1/canaries/{canary_id}/incidents:
+    post:
+      tags: [node reporting]
+      operationId: publishIncident
+      summary: Publish an incident lifecycle event
+      description: |
+        incident_key is stable for one rule and shop. The control plane owns
+        the durable incident_id and upserts lifecycle events by that key.
+      security:
+        - nodeBearer: []
+      parameters:
+        - $ref: '#/components/parameters/CanaryId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentRequest'
+            example:
+              contract_version: '1.0'
+              organization_id: 9b6f8e2f-5fb6-4ef1-9818-0f0b6d5d8f22
+              canary_id: 1b3c29d1-e8d7-4d1e-8a0c-2f1ecf2cb7b3
+              node_id: f3a4dd93-9ff4-4f6d-9e14-1e2f7ea0c4b0
+              emission_id: d7f8fda4-4be9-47fb-a8cd-ae7e8e72b956
+              incident_key: checkout_conversion_below_threshold:shop_id_1
+              rule_id: checkout_conversion_below_threshold
+              lifecycle_event: opened
+              status: open
+              occurred_at: '2026-08-30T16:00:03Z'
+              family: conversion
+              source: shopify
+              tenant_id: shop_id_1
+              entity_id: shop_id_1
+              shop_id: shop_id_1
+              window:
+                start: '2026-08-30T15:45:03Z'
+                end: '2026-08-30T16:00:03Z'
+                seconds: 900
+              threshold:
+                operator: lt
+                value: 0.2
+              metrics:
+                checkout_started: 100
+                payment_success: 10
+                conversion_rate: 0.1
+      responses:
+        '202':
+          $ref: '#/components/responses/IncidentAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '502':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+        '504':
+          $ref: '#/components/responses/TemporarilyUnavailable'
+
+components:
+  securitySchemes:
+    signalBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque local ingest token
+      description: Token configured locally through SIGNAL_INGEST_TOKEN.
+    signalApiKey:
+      type: apiKey
+      in: header
+      name: X-Canary-API-Key
+      description: Alternative header for the locally configured ingest token.
+    enrollmentBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque one-time enrollment token
+      description: Short-lived token scoped to one organization, canary and mode.
+    nodeBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque node access token
+      description: Token issued by enrollment and bound server-side to one node/canary.
+
+  parameters:
+    CanaryId:
+      name: canary_id
+      in: path
+      required: true
+      description: Canary UUID bound to the bearer token.
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable key for this logical POST operation; 1–128 ASCII characters.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[\x20-\x7E]+$'
+
+  headers:
+    RequestId:
+      description: Server request identifier for support and trace correlation.
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Accepted:
+      description: Report accepted; duplicate is safe to stop retrying.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AcceptedResponse'
+    IncidentAccepted:
+      description: Incident lifecycle event accepted.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/RequestId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IncidentAcceptedResponse'
+    BadRequest:
+      description: Invalid JSON or request shape.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing, invalid or expired bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Valid token but revoked or outside the requested scope.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Endpoint or active canary not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Idempotency conflict or enrollment token already consumed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooLarge:
+      description: Request body exceeds the endpoint limit.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnsupportedMediaType:
+      description: Content-Type is not application/json.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationFailed:
+      description: Semantic validation failed or report is stale.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimited:
+      description: Rate limit exceeded; respect Retry-After.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: Transient control-plane failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TemporarilyUnavailable:
+      description: Control plane is temporarily unavailable; Retry-After may be present.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ContractVersion:
+      type: string
+      pattern: '^1\.[0-9]+$'
+      example: '1.0'
+    OrganizationId:
+      type: string
+      format: uuid
+    CanaryId:
+      type: string
+      format: uuid
+    NodeId:
+      type: string
+      format: uuid
+    NodeInstanceId:
+      type: string
+      format: uuid
+    Signal:
+      type: object
+      required: [source, tenant_id, entity_id, kind, name, occurred_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        external_id:
+          type: string
+          maxLength: 512
+        source:
+          type: string
+          minLength: 1
+          maxLength: 512
+        tenant_id:
+          type: string
+          minLength: 1
+          maxLength: 512
+        entity_id:
+          type: string
+          minLength: 1
+          maxLength: 512
+        kind:
+          type: string
+          enum: [event, measurement, state, heartbeat]
+        name:
+          type: string
+          minLength: 1
+          maxLength: 512
+        value:
+          type: number
+        unit:
+          type: string
+          maxLength: 512
+        dimensions:
+          type: object
+          maxProperties: 32
+          additionalProperties:
+            type: string
+            maxLength: 512
+        payload:
+          type: object
+          additionalProperties: true
+        occurred_at:
+          type: string
+          format: date-time
+    SignalBatchRequest:
+      type: object
+      required: [signals]
+      properties:
+        signals:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/Signal'
+    SignalAcceptedResponse:
+      type: object
+      required: [status, id]
+      properties:
+        status:
+          type: string
+          enum: [accepted]
+        id:
+          type: string
+          format: uuid
+    SignalBatchAcceptedResponse:
+      type: object
+      required: [status, accepted]
+      properties:
+        status:
+          type: string
+          enum: [accepted]
+        accepted:
+          type: integer
+          minimum: 1
+    DeploymentMode:
+      type: string
+      enum: [cloud, on_premise]
+    ShopId:
+      type: string
+      minLength: 1
+      maxLength: 255
+    Window:
+      type: object
+      required: [start, end, seconds]
+      properties:
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        seconds:
+          type: integer
+          minimum: 1
+      description: Closed-open UTC observation interval [start, end).
+    EnrollmentRequest:
+      type: object
+      required:
+        - contract_version
+        - organization_id
+        - canary_id
+        - deployment_mode
+        - node_instance_id
+        - node_version
+        - capabilities
+      properties:
+        contract_version:
+          $ref: '#/components/schemas/ContractVersion'
+        organization_id:
+          $ref: '#/components/schemas/OrganizationId'
+        canary_id:
+          $ref: '#/components/schemas/CanaryId'
+        deployment_mode:
+          $ref: '#/components/schemas/DeploymentMode'
+        node_instance_id:
+          $ref: '#/components/schemas/NodeInstanceId'
+        node_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+        capabilities:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            enum: [shopify_webhooks, clickhouse_rollups, incidents]
+    EnrollmentResponse:
+      type: object
+      required:
+        - contract_version
+        - organization_id
+        - canary_id
+        - node_id
+        - deployment_mode
+        - access_token
+        - access_token_expires_at
+        - reporting
+        - raw_event_forwarding
+      properties:
+        contract_version:
+          $ref: '#/components/schemas/ContractVersion'
+        organization_id:
+          $ref: '#/components/schemas/OrganizationId'
+        canary_id:
+          $ref: '#/components/schemas/CanaryId'
+        node_id:
+          $ref: '#/components/schemas/NodeId'
+        deployment_mode:
+          $ref: '#/components/schemas/DeploymentMode'
+        access_token:
+          type: string
+          minLength: 32
+          writeOnly: true
+        access_token_expires_at:
+          type: string
+          format: date-time
+        reporting:
+          type: object
+          required: [heartbeat_interval_seconds, rollup_interval_seconds]
+          properties:
+            heartbeat_interval_seconds:
+              type: integer
+              minimum: 1
+            rollup_interval_seconds:
+              type: integer
+              minimum: 1
+        raw_event_forwarding:
+          type: boolean
+          enum: [false]
+    HeartbeatRequest:
+      type: object
+      required:
+        - contract_version
+        - organization_id
+        - canary_id
+        - node_id
+        - sent_at
+        - node_version
+        - status
+        - uptime_seconds
+        - components
+      properties:
+        contract_version:
+          $ref: '#/components/schemas/ContractVersion'
+        organization_id:
+          $ref: '#/components/schemas/OrganizationId'
+        canary_id:
+          $ref: '#/components/schemas/CanaryId'
+        node_id:
+          $ref: '#/components/schemas/NodeId'
+        sent_at:
+          type: string
+          format: date-time
+        node_version:
+          type: string
+        status:
+          type: string
+          enum: [ready, degraded, unhealthy]
+        uptime_seconds:
+          type: integer
+          minimum: 0
+        components:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [ready, running, degraded, unhealthy]
+        data:
+          type: object
+          properties:
+            lookback_seconds:
+              type: integer
+              minimum: 1
+            last_event_at:
+              type: string
+              format: date-time
+    Summary:
+      type: object
+      required: [total_shops, at_risk_shops, checkout_started, payment_success, conversion_rate, total_signals, source_count, entity_count]
+      properties:
+        total_shops:
+          type: integer
+          minimum: 0
+        at_risk_shops:
+          type: integer
+          minimum: 0
+        checkout_started:
+          type: integer
+          minimum: 0
+        payment_success:
+          type: integer
+          minimum: 0
+        conversion_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+        total_signals:
+          type: integer
+          minimum: 0
+        source_count:
+          type: integer
+          minimum: 0
+        entity_count:
+          type: integer
+          minimum: 0
+    ShopRollup:
+      type: object
+      required: [shop_id, checkout_started, payment_success, conversion_rate, status]
+      properties:
+        shop_id:
+          $ref: '#/components/schemas/ShopId'
+        checkout_started:
+          type: integer
+          minimum: 0
+        payment_success:
+          type: integer
+          minimum: 0
+        conversion_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+        status:
+          type: string
+          enum: [healthy, at_risk]
+    SignalRollup:
+      type: object
+      required: [source, tenant_id, entity_id, kind, name, unit, samples, avg_value, last_occurred_at]
+      properties:
+        source:
+          type: string
+        tenant_id:
+          type: string
+        entity_id:
+          type: string
+        kind:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        samples:
+          type: integer
+          minimum: 0
+        avg_value:
+          type: number
+        last_occurred_at:
+          type: string
+          format: date-time
+    RollupRequest:
+      type: object
+      required:
+        - contract_version
+        - organization_id
+        - canary_id
+        - node_id
+        - rollup_id
+        - generated_at
+        - window
+        - rule_set_version
+        - summary
+        - shops
+      properties:
+        contract_version:
+          $ref: '#/components/schemas/ContractVersion'
+        organization_id:
+          $ref: '#/components/schemas/OrganizationId'
+        canary_id:
+          $ref: '#/components/schemas/CanaryId'
+        node_id:
+          $ref: '#/components/schemas/NodeId'
+        rollup_id:
+          type: string
+          format: uuid
+        generated_at:
+          type: string
+          format: date-time
+        window:
+          $ref: '#/components/schemas/Window'
+        rule_set_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+        summary:
+          $ref: '#/components/schemas/Summary'
+        shops:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/ShopRollup'
+        signals:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/SignalRollup'
+    Threshold:
+      type: object
+      required: [operator, value]
+      properties:
+        operator:
+          type: string
+          enum: [gt, gte, lt, lte]
+        value:
+          type: number
+    IncidentMetrics:
+      type: object
+      required: [checkout_started, payment_success, conversion_rate]
+      properties:
+        checkout_started:
+          type: integer
+          minimum: 0
+        payment_success:
+          type: integer
+          minimum: 0
+        conversion_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+        observed_value:
+          type: number
+          description: Aggregate value that crossed the rule threshold for generic or analytical incidents.
+        baseline_value:
+          type: number
+          description: Optional comparison value for analytical incidents.
+    IncidentRequest:
+      type: object
+      required:
+        - contract_version
+        - organization_id
+        - canary_id
+        - node_id
+        - emission_id
+        - incident_key
+        - rule_id
+        - lifecycle_event
+        - status
+        - occurred_at
+        - window
+        - threshold
+        - metrics
+      properties:
+        contract_version:
+          $ref: '#/components/schemas/ContractVersion'
+        organization_id:
+          $ref: '#/components/schemas/OrganizationId'
+        canary_id:
+          $ref: '#/components/schemas/CanaryId'
+        node_id:
+          $ref: '#/components/schemas/NodeId'
+        emission_id:
+          type: string
+          format: uuid
+        incident_key:
+          type: string
+          minLength: 1
+          maxLength: 255
+        rule_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        lifecycle_event:
+          type: string
+          enum: [opened, updated, recovered]
+        status:
+          type: string
+          enum: [open, recovered]
+        occurred_at:
+          type: string
+          format: date-time
+        family:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Rule family, for example conversion, threshold or ratio.
+        source:
+          type: string
+          maxLength: 128
+        tenant_id:
+          type: string
+          maxLength: 256
+        entity_id:
+          type: string
+          maxLength: 256
+        shop_id:
+          $ref: '#/components/schemas/ShopId'
+          description: Shopify compatibility alias for entity_id.
+        window:
+          $ref: '#/components/schemas/Window'
+        threshold:
+          $ref: '#/components/schemas/Threshold'
+        metrics:
+          $ref: '#/components/schemas/IncidentMetrics'
+    AcceptedResponse:
+      type: object
+      required: [contract_version, status, duplicate, request_id]
+      properties:
+        contract_version:
+          $ref: '#/components/schemas/ContractVersion'
+        status:
+          type: string
+          enum: [accepted]
+        duplicate:
+          type: boolean
+        stale:
+          type: boolean
+        request_id:
+          type: string
+          format: uuid
+    IncidentAcceptedResponse:
+      type: object
+      required: [contract_version, status, duplicate, incident_id, incident_key, request_id]
+      properties:
+        contract_version:
+          $ref: '#/components/schemas/ContractVersion'
+        status:
+          type: string
+          enum: [accepted]
+        duplicate:
+          type: boolean
+        stale:
+          type: boolean
+        incident_id:
+          type: string
+          format: uuid
+        incident_key:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code:
+              type: string
+              example: scope_mismatch
+            message:
+              type: string
+              example: request is not authorized for this canary
+            request_id:
+              type: string
+              format: uuid

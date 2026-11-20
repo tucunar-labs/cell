@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg viewBox="0 0 176 122" version="1.1" id="svg1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+  <style type="text/css"><![CDATA[
+    .glyph .shape { fill: none; stroke: #102033; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+    .glyph .accent { stroke: #5c82b1; }
+    .glyph .warm { stroke: #d08351; }
+  ]]></style>
+  <g class="glyph" id="kingbird-mark">
+    <!-- Two colored traces converge on the correlation window. -->
+    <path class="shape accent " d="M30 22L59 44M117 78L146 100" id="trace-blue" />
+    <path class="shape warm " d="M146 22L117 44M59 78L30 100" id="trace-warm" />
+    <rect class="shape" x="63" y="39" width="50" height="44" rx="13" id="correlation-window" />
+  </g>
+</svg>

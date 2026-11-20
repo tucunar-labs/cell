@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: canary-evaluator
+spec:
+  template:
+    spec:
+      volumes:
+        - name: rules
+          configMap:
+            name: tucunar-cell-rules
+      containers:
+        - name: canary-evaluator
+          env:
+            - name: RULES_FILE
+              value: /etc/tucunar/rules/rules.json
+          volumeMounts:
+            - name: rules
+              mountPath: /etc/tucunar/rules
+              readOnly: true

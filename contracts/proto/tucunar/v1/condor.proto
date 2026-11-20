@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package tucunar.v1;
+
+option go_package = "github.com/tucunar/contracts/gen/tucunar/v1;tucunarv1";
+
+import "google/protobuf/timestamp.proto";
+import "tucunar/v1/common.proto";
+
+service CondorService {
+  // Append is the durable ingestion boundary. It is safe to retry when the
+  // signal external_id/id and tenant scope remain unchanged.
+  rpc Append(AppendRequest) returns (AppendResponse);
+
+  // Read is a bounded cursor-based stream so consumers do not poll the raw
+  // ledger with an unbounded query.
+  rpc Read(ReadRequest) returns (ReadResponse);
+}
+
+message AppendRequest {
+  TenantContext context = 1;
+  repeated Signal signals = 2;
+}
+
+message AppendResponse {
+  TenantContext context = 1;
+  uint64 accepted = 2;
+  uint64 deduplicated = 3;
+}
+
+message ReadRequest {
+  TenantContext context = 1;
+  string stream = 2;
+  string cursor = 3;
+  uint32 limit = 4;
+  google.protobuf.Timestamp until = 5;
+  // Stable consumer identity used to resume the bounded cursor after restart.
+  string consumer = 6;
+  // Optional lower bound for a bounded snapshot. When set with an empty
+  // cursor, the server does not substitute the stored consumer offset.
+  google.protobuf.Timestamp since = 7;
+}
+
+message ReadResponse {
+  TenantContext context = 1;
+  repeated Signal signals = 2;
+  string next_cursor = 3;
+  bool has_more = 4;
+}

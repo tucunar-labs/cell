@@ -1,0 +1,13 @@
+apiVersion: k0s.k0sproject.io/v1beta1
+kind: ClusterConfig
+metadata:
+  name: k0s
+spec:
+  # The node address is intentionally auto-detected. Operators with multiple
+  # interfaces should set spec.api.address for the interface used by workers.
+  network:
+    provider: kuberouter
+  storage:
+    type: etcd
+  telemetry:
+    enabled: false

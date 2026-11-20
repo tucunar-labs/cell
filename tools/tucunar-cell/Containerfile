@@ -1,0 +1,25 @@
+FROM golang:1.26-alpine AS build
+WORKDIR /src
+ARG VERSION=dev
+ARG SERVICE=swift
+COPY tools/tucunar-cell/go.mod tools/tucunar-cell/go.sum ./tools/tucunar-cell/
+COPY contracts/go.mod contracts/go.sum ./contracts/
+RUN cd tools/tucunar-cell && go mod download
+COPY tools/tucunar-cell ./tools/tucunar-cell
+COPY contracts ./contracts
+WORKDIR /src/tools/tucunar-cell
+RUN test -f "cmd/${SERVICE}/main.go"
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 go build -p 1 -trimpath -buildvcs=false -ldflags "-s -w -buildid= -X tucunar-cell.buildVersion=${VERSION}" -o "/app/tucunar-${SERVICE}" "./cmd/${SERVICE}"
+
+FROM alpine:3.20
+RUN adduser -D app && mkdir -p /var/lib/tucunar-cell && chown -R app:app /var/lib/tucunar-cell
+USER app
+ARG VERSION=dev
+ARG SERVICE=swift
+LABEL org.opencontainers.image.title="tucunar-cell-${SERVICE}" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/tucunar-labs/cell" \
+      com.tucunar.cell.service="${SERVICE}"
+COPY --from=build "/app/tucunar-${SERVICE}" /app/tucunar-service
+ENTRYPOINT ["/app/tucunar-service"]

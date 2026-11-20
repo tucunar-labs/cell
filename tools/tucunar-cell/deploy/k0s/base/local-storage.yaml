@@ -1,0 +1,63 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: tucunar-local
+  labels:
+    app.kubernetes.io/part-of: tucunar-cell
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: hummingbird-state-local
+  labels:
+    app.kubernetes.io/name: hummingbird
+    app.kubernetes.io/part-of: tucunar-cell
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: tucunar-local
+  hostPath:
+    path: /var/lib/tucunar/hummingbird
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: clickhouse-data-local
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: tucunar-cell
+spec:
+  capacity:
+    storage: 50Gi
+  volumeMode: Filesystem
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: tucunar-local
+  hostPath:
+    path: /var/lib/tucunar/clickhouse/data
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: clickhouse-logs-local
+  labels:
+    app.kubernetes.io/name: clickhouse
+    app.kubernetes.io/part-of: tucunar-cell
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: tucunar-local
+  hostPath:
+    path: /var/lib/tucunar/clickhouse/logs
+    type: DirectoryOrCreate

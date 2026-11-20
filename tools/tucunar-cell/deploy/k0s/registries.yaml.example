@@ -1,0 +1,17 @@
+# Copy to /etc/k0s/registries.yaml on every k0s node only when the
+# cell uses more than one node or an internal OCI registry is required.
+#
+# Replace the host, endpoint and CA path. Never commit real credentials here.
+
+mirrors:
+  registry.example.internal:5000:
+    endpoint:
+      - https://registry.example.internal:5000
+
+configs:
+  registry.example.internal:5000:
+    tls:
+      ca_file: /etc/k0s/registry-ca.crt
+    # auth:
+    #   username: operator
+    #   password: replace-me
