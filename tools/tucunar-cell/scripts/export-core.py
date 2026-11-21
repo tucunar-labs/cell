@@ -77,6 +77,7 @@ def main():
         # (including credentials or maintainer notes) from distribution/.
         public_files = (
             "README.md", "CONTRIBUTING.md", "SECURITY.md", "NOTICE",
+            "allowed_signers",
             ".github/workflows/community-export.yml",
             ".github/workflows/community-release.yml",
             ".github/ISSUE_TEMPLATE/bug_report.md",

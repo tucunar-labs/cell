@@ -370,6 +370,117 @@ def cmd_sign(args):
         print(f"Signed {target} -> {sig}")
 
 
+def cmd_verify_file(args):
+    _, config, _ = load_release_config()
+    namespace = args.signature_namespace or config.get("signature_namespace", "tucunar-cell-release")
+    target = Path(args.file).resolve()
+    sig_path = Path(args.signature).resolve() if args.signature else Path(str(target) + ".sig")
+    verify_signature(target, sig_path, Path(args.allowed_signers).resolve(), namespace, principal=args.signer_principal or None)
+    if target.name.endswith(".sha256"):
+        artifact = target.with_name(target.name[:-len(".sha256")])
+        if artifact.exists():
+            verify_sha256_file(artifact, target)
+    print(f"PASS verified signature for {target.name}")
+
+
+def cmd_package_archive(args):
+    """Build a standard release manifest, checksums and optional signatures around an existing 5-image tar."""
+    _, config, default_version = load_release_config()
+    version = validate_version(args.version or default_version)
+    platform = args.platform
+    if platform not in config["platforms"]:
+        raise ValueError(f"unsupported platform {platform!r}; release manifest lists {config['platforms']}")
+    source_archive = Path(args.archive).resolve()
+    if not source_archive.is_file():
+        raise FileNotFoundError(f"OCI/Docker image archive not found: {source_archive}")
+    output_dir = Path(args.output).resolve()
+    if output_dir.exists():
+        raise FileExistsError(f"output directory already exists: {output_dir}")
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    digests_map = json.loads(Path(args.image_digests_json).read_text()) if args.image_digests_json else {}
+    tar_refs = inspect_tar_image_refs(source_archive)
+    required = expected_images(config, version)
+    manifest_images = []
+    for entry in required:
+        matches = normalize_ref_candidates(entry["ref"]) & tar_refs
+        if not matches:
+            raise RuntimeError(
+                f"archive {source_archive.name} missing required image {entry['ref']} (found {sorted(tar_refs)})"
+            )
+        matched = sorted(matches)[0]
+        digest = digests_map.get(entry["ref"]) or digests_map.get(matched) or ""
+        manifest_images.append({
+            "role": entry["role"],
+            "service": entry["service"],
+            "ref": entry["ref"],
+            "containerd_ref": matched,
+            "digest": digest,
+        })
+
+    plat_slug = platform.replace("/", "-")
+    archive_name = f"tucunar-cell-images-{plat_slug}-{version}.oci.tar"
+    manifest_name = f"tucunar-cell-release-manifest-{version}.json"
+    temporary = Path(tempfile.mkdtemp(prefix=".cell-oci-pack-", dir=output_dir.parent))
+    try:
+        archive_path = temporary / archive_name
+        shutil.copy2(source_archive, archive_path)
+        archive_sha, archive_sha_path = write_sha256_file(archive_path)
+        manifest = {
+            "manifest_version": 1,
+            "product": "tucunar-cell-community",
+            "license": "Apache-2.0",
+            "repository": config.get("repository", "tucunar-labs/cell"),
+            "version": version,
+            "source_commit": args.commit or "unreleased-local",
+            "contract_major": config["contract_major"],
+            "schema_compatibility": config.get("schema_compatibility", 1),
+            "platform": platform,
+            "validated_platforms": list(config["platforms"]),
+            "signature_namespace": config.get("signature_namespace", "tucunar-cell-release"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "archive": {
+                "filename": archive_name,
+                "sha256": archive_sha,
+                "size_bytes": archive_path.stat().st_size,
+            },
+            "images": manifest_images,
+            "tools": {name: {"version": t["version"], "sha256": t["sha256"]} for name, t in config["tools"].items()},
+            "desktop_tools": {
+                name: {"version": t["version"], "sha256": t["sha256"]}
+                for name, t in config.get("desktop_tools", {}).items()
+            },
+        }
+        manifest_path = temporary / manifest_name
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+        write_sha256_file(manifest_path)
+
+        if args.signing_key:
+            sig_ns = manifest["signature_namespace"]
+            sign_file(manifest_path, args.signing_key, sig_ns)
+            sign_file(archive_sha_path, args.signing_key, sig_ns)
+            if args.allowed_signers:
+                shutil.copyfile(args.allowed_signers, temporary / "allowed_signers")
+            elif Path(str(args.signing_key) + ".pub").exists():
+                pub = Path(str(args.signing_key) + ".pub").read_text().strip()
+                principal = args.signer_principal or "release@tucunar.com"
+                (temporary / "allowed_signers").write_text(f"{principal} {pub}\n")
+
+        verify_bundle(
+            temporary,
+            allowed_signers=(temporary / "allowed_signers") if args.signing_key else None,
+            require_signature=bool(args.signing_key),
+            expected_version=version,
+        )
+        temporary.rename(output_dir)
+    finally:
+        if temporary.exists():
+            shutil.rmtree(temporary)
+
+    print(f"Packaged and verified offline OCI bundle at {output_dir}")
+    print(f"Archive: {output_dir / archive_name} (sha256={archive_sha})")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -385,6 +496,18 @@ def main():
     p_exp.add_argument("--allowed-signers", type=Path, help="optional allowed_signers file to bundle")
     p_exp.add_argument("--signer-principal", default="release@tucunar.com")
     p_exp.set_defaults(func=cmd_export)
+
+    p_pack = sub.add_parser("package-archive", help="wrap an existing 5-image tar in the standard release manifest and signatures")
+    p_pack.add_argument("archive", type=Path, help="existing multi-image OCI/Docker tar archive")
+    p_pack.add_argument("output", type=Path, help="new destination directory for the offline bundle")
+    p_pack.add_argument("--version", help="explicit semantic version (defaults to VERSION)")
+    p_pack.add_argument("--platform", default="linux/amd64")
+    p_pack.add_argument("--commit", default="", help="source commit SHA recorded in manifest")
+    p_pack.add_argument("--image-digests-json", type=Path, help="optional JSON mapping image ref -> digest")
+    p_pack.add_argument("--signing-key", type=Path, help="optional Ed25519 private key for ssh-keygen -Y sign")
+    p_pack.add_argument("--allowed-signers", type=Path, help="optional allowed_signers file to bundle")
+    p_pack.add_argument("--signer-principal", default="release@tucunar.com")
+    p_pack.set_defaults(func=cmd_package_archive)
 
     p_ver = sub.add_parser("verify", help="verify bundle checksums, OCI contents and optional signature offline")
     p_ver.add_argument("bundle_dir", type=Path)
@@ -409,6 +532,14 @@ def main():
     p_sign.add_argument("--signature-namespace", default="")
     p_sign.add_argument("files", nargs="+", type=Path)
     p_sign.set_defaults(func=cmd_sign)
+
+    p_vf = sub.add_parser("verify-file", help="verify an individual signed release artifact or .sha256 file offline")
+    p_vf.add_argument("--allowed-signers", required=True, type=Path)
+    p_vf.add_argument("--signature", type=Path, help="optional explicit .sig path")
+    p_vf.add_argument("--signature-namespace", default="")
+    p_vf.add_argument("--signer-principal", default="")
+    p_vf.add_argument("file", type=Path)
+    p_vf.set_defaults(func=cmd_verify_file)
 
     args = parser.parse_args()
     try:

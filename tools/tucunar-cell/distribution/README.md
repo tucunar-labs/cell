@@ -299,6 +299,21 @@ missing service images, untrusted signing keys or missing signatures. Never
 trust an `allowed_signers` file fetched from the same unauthenticated channel
 as the archive without verifying its fingerprint out-of-band.
 
+Official `tucunar-labs/cell` Ed25519 release signing key (`allowed_signers` in
+the repository root):
+
+- Principal: `release@tucunar.com`
+- Fingerprint: `SHA256:eQ180qR6xB4XD1Ko1crMX7pmuA9r6wheKbgYhkRp11s`
+- Namespace: `tucunar-cell-release`
+
+To verify a downloaded source archive offline:
+
+```bash
+python3 tools/tucunar-cell/scripts/community-bundle.py verify-file \
+  --allowed-signers allowed_signers \
+  tucunar-cell-0.1.0-alpha.1.tar.gz.sha256
+```
+
 After import, initialize or reapply your private Community instance directory.
 Currently only `linux/amd64` is operationally rehearsed; `linux/arm64` is not
 claimed as validated until exercised on matching hardware.

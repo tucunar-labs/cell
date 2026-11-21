@@ -87,25 +87,25 @@ jobs:
           file: tools/tucunar-cell/Containerfile
           platforms: linux/amd64
           push: false
-          outputs: type=oci,dest=${{ runner.temp }}/image-${{ matrix.service }}.oci.tar
+          outputs: type=docker,dest=${{ runner.temp }}/image-${{ matrix.service }}.tar
           tags: ghcr.io/tucunar/${{ matrix.service }}:${{ steps.meta.outputs.version }}
           build-args: |
             SERVICE=${{ matrix.service }}
             VERSION=${{ steps.meta.outputs.version }}
-      - name: Compute OCI archive checksum
+      - name: Compute image archive checksum
         run: |
           cd "$RUNNER_TEMP"
-          sha256sum "image-${{ matrix.service }}.oci.tar" > "image-${{ matrix.service }}.oci.tar.sha256"
+          sha256sum "image-${{ matrix.service }}.tar" > "image-${{ matrix.service }}.tar.sha256"
       - name: Attest image archive provenance
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ${{ runner.temp }}/image-${{ matrix.service }}.oci.tar
+          subject-path: ${{ runner.temp }}/image-${{ matrix.service }}.tar
       - uses: actions/upload-artifact@v4
         with:
           name: oci-${{ matrix.service }}-linux-amd64
           path: |
-            ${{ runner.temp }}/image-${{ matrix.service }}.oci.tar
-            ${{ runner.temp }}/image-${{ matrix.service }}.oci.tar.sha256
+            ${{ runner.temp }}/image-${{ matrix.service }}.tar
+            ${{ runner.temp }}/image-${{ matrix.service }}.tar.sha256
           if-no-files-found: error
 
   package-candidate:
@@ -115,6 +115,8 @@ jobs:
       contents: read
       id-token: write
       attestations: write
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - name: Resolve release version
@@ -128,6 +130,38 @@ jobs:
             version="$(tr -d '[:space:]' < tools/tucunar-cell/VERSION)"
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Download all 4 single-service image archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: oci-*-linux-amd64
+          path: ${{ runner.temp }}/service-images
+          merge-multiple: true
+      - name: Assemble combined 5-image offline OCI bundle (linux/amd64)
+        run: |
+          set -euo pipefail
+          version="${{ steps.meta.outputs.version }}"
+          ch_image="$(python3 -c 'import json; print(json.load(open("tools/tucunar-cell/community-release.json"))["clickhouse_image"])')"
+          for svc in swift condor canary-evaluator hummingbird; do
+            (cd "$RUNNER_TEMP/service-images" && sha256sum -c "image-${svc}.tar.sha256")
+            docker load -i "$RUNNER_TEMP/service-images/image-${svc}.tar"
+          done
+          docker pull --platform linux/amd64 "$ch_image"
+          python3 - "$version" "$ch_image" "$RUNNER_TEMP/digests.json" <<'PY'
+          import json, subprocess, sys
+          version, ch_image, out_path = sys.argv[1], sys.argv[2], sys.argv[3]
+          refs = [f"ghcr.io/tucunar/{s}:{version}" for s in ("swift", "condor", "canary-evaluator", "hummingbird")] + [ch_image]
+          digests = {}
+          for ref in refs:
+              out = subprocess.check_output(["docker", "inspect", "--format", "{{.Id}}", ref], text=True).strip()
+              digests[ref] = out
+          open(out_path, "w").write(json.dumps(digests, indent=2) + "\n")
+          PY
+          docker save -o "$RUNNER_TEMP/combined-images.tar" \
+            "ghcr.io/tucunar/swift:${version}" \
+            "ghcr.io/tucunar/condor:${version}" \
+            "ghcr.io/tucunar/canary-evaluator:${version}" \
+            "ghcr.io/tucunar/hummingbird:${version}" \
+            "$ch_image"
       - name: Package allowlisted source archive
         run: |
           python3 tools/tucunar-cell/scripts/export-core.py \
@@ -138,42 +172,152 @@ jobs:
           path: ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}
           format: spdx-json
           output-file: ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.spdx.json
-      - name: Sign release checksums (when RELEASE_SIGNING_KEY is configured)
+      - name: Package offline OCI manifest and sign release artifacts
         env:
           RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
           RELEASE_ALLOWED_SIGNERS: ${{ secrets.RELEASE_ALLOWED_SIGNERS }}
         run: |
+          set -euo pipefail
+          version="${{ steps.meta.outputs.version }}"
+          bundle_dir="$RUNNER_TEMP/oci-bundle"
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          sign_args=()
           if [[ -n "$RELEASE_SIGNING_KEY" ]]; then
             install -m 0600 /dev/null "$RUNNER_TEMP/release_key"
             printf '%s\n' "$RELEASE_SIGNING_KEY" > "$RUNNER_TEMP/release_key"
-            python3 tools/tucunar-cell/scripts/community-bundle.py sign \
-              --signing-key "$RUNNER_TEMP/release_key" \
-              "$RUNNER_TEMP/tucunar-cell-${{ steps.meta.outputs.version }}.tar.gz.sha256" \
-              "$RUNNER_TEMP/tucunar-cell-${{ steps.meta.outputs.version }}.spdx.json"
-            rm -f "$RUNNER_TEMP/release_key"
             if [[ -n "$RELEASE_ALLOWED_SIGNERS" ]]; then
               printf '%s\n' "$RELEASE_ALLOWED_SIGNERS" > "$RUNNER_TEMP/allowed_signers"
+            else
+              cp allowed_signers "$RUNNER_TEMP/allowed_signers"
             fi
+            sign_args=(--signing-key "$RUNNER_TEMP/release_key" --allowed-signers "$RUNNER_TEMP/allowed_signers")
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "ERROR: RELEASE_SIGNING_KEY secret is required to sign tagged releases" >&2
             exit 1
           else
             echo "Note: RELEASE_SIGNING_KEY not set; workflow_dispatch produces unsigned candidate artifacts."
           fi
-      - name: Attest source archive and SBOM provenance
+
+          python3 tools/tucunar-cell/scripts/community-bundle.py package-archive \
+            "$RUNNER_TEMP/combined-images.tar" \
+            "$bundle_dir" \
+            --version "$version" \
+            --commit "${GITHUB_SHA}" \
+            --image-digests-json "$RUNNER_TEMP/digests.json" \
+            "${sign_args[@]}"
+
+          if [[ -n "$RELEASE_SIGNING_KEY" ]]; then
+            python3 tools/tucunar-cell/scripts/community-bundle.py sign \
+              --signing-key "$RUNNER_TEMP/release_key" \
+              "$RUNNER_TEMP/tucunar-cell-${version}.tar.gz.sha256" \
+              "$RUNNER_TEMP/tucunar-cell-${version}.spdx.json"
+            rm -f "$RUNNER_TEMP/release_key"
+            # Self-verify all signed release artifacts offline inside CI before upload.
+            python3 tools/tucunar-cell/scripts/community-bundle.py verify \
+              "$bundle_dir" \
+              --version "$version" \
+              --allowed-signers "$RUNNER_TEMP/allowed_signers" \
+              --require-signature
+            python3 tools/tucunar-cell/scripts/community-bundle.py verify-file \
+              --allowed-signers "$RUNNER_TEMP/allowed_signers" \
+              "$RUNNER_TEMP/tucunar-cell-${version}.tar.gz.sha256"
+            python3 tools/tucunar-cell/scripts/community-bundle.py verify-file \
+              --allowed-signers "$RUNNER_TEMP/allowed_signers" \
+              "$RUNNER_TEMP/tucunar-cell-${version}.spdx.json"
+            cp "$RUNNER_TEMP/allowed_signers" "$RUNNER_TEMP/release-assets/allowed_signers"
+          fi
+
+          cp "$RUNNER_TEMP/tucunar-cell-${version}.tar.gz" \
+             "$RUNNER_TEMP/tucunar-cell-${version}.tar.gz.sha256" \
+             "$RUNNER_TEMP/tucunar-cell-${version}.spdx.json" \
+             "$RUNNER_TEMP/release-assets/"
+          cp "$RUNNER_TEMP/tucunar-cell-${version}.tar.gz.sha256.sig" \
+             "$RUNNER_TEMP/tucunar-cell-${version}.spdx.json.sig" \
+             "$RUNNER_TEMP/release-assets/" 2>/dev/null || true
+          cp "$bundle_dir"/* "$RUNNER_TEMP/release-assets/"
+      - name: Attest source archive, SBOM, manifest and offline OCI bundle provenance
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.tar.gz
-            ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.spdx.json
+            ${{ runner.temp }}/release-assets/tucunar-cell-${{ steps.meta.outputs.version }}.tar.gz
+            ${{ runner.temp }}/release-assets/tucunar-cell-${{ steps.meta.outputs.version }}.spdx.json
+            ${{ runner.temp }}/release-assets/tucunar-cell-release-manifest-${{ steps.meta.outputs.version }}.json
+            ${{ runner.temp }}/release-assets/tucunar-cell-images-linux-amd64-${{ steps.meta.outputs.version }}.oci.tar
       - uses: actions/upload-artifact@v4
         with:
-          name: tucunar-cell-release-candidate-${{ steps.meta.outputs.version }}
-          path: |
-            ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.tar.gz
-            ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.tar.gz.sha256
-            ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.tar.gz.sha256.sig
-            ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.spdx.json
-            ${{ runner.temp }}/tucunar-cell-${{ steps.meta.outputs.version }}.spdx.json.sig
-            ${{ runner.temp }}/allowed_signers
-          if-no-files-found: ignore
+          name: tucunar-cell-release-assets-${{ steps.meta.outputs.version }}
+          path: ${{ runner.temp }}/release-assets/*
+          if-no-files-found: error
+
+  publish-release:
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    needs: [package-candidate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: tucunar-cell-release-assets-${{ needs.package-candidate.outputs.version }}
+          path: ${{ runner.temp }}/release-assets
+      - name: Publish GitHub Release with structured notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.package-candidate.outputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          prerelease_flag=""
+          if [[ "$VERSION" == *-* ]]; then
+            prerelease_flag="--prerelease"
+          fi
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          # Tucunar Cell Community ${VERSION}
+
+          Open-core operational monitoring runtime (Apache-2.0): four independent Go services (\`swift\`, \`condor\`, \`canary-evaluator\`, \`hummingbird\`), ClickHouse 24.3, versioned contracts, native Linux console source, and four SCADA reference readers.
+
+          ## Implemented in this release
+          - Standalone allowlisted source distribution (\`tucunar-cell-${VERSION}.tar.gz\`) with SHA-256 checksums, SPDX SBOM, OpenSSH Ed25519 signatures, and GitHub build provenance attestations.
+          - Combined Linux \`amd64\` offline OCI image bundle (\`tucunar-cell-images-linux-amd64-${VERSION}.oci.tar\`) with the 4 versioned core services and \`clickhouse/clickhouse-server:24.3\`, plus \`tucunar-cell-release-manifest-${VERSION}.json\`.
+          - Offline verification and k0s containerd import CLI (\`community-bundle.py\`), and quiesced backup, preflighted separate-host restore, upgrade, and schema-guarded rollback CLI (\`community-ops.py\`).
+
+          ## Validated scope
+          - Clean Debian 13 \`amd64\` KVM onboarding: pinned k0s \`v1.35.8+k0s.1\`, cold image builds, PVCs, authenticated intake → incident → recovery, restart durability, and isolated Wayland/Lavapipe native console review.
+          - Air-gapped Debian 13 \`amd64\` KVM rehearsal (\`restrict=on\`): offline Ed25519 signature verification, tampered/untrusted rejection, offline OCI import into \`k0s ctr -n k8s.io\`, offline 5-workload startup, quiesced backup, upgrade/rollback, and preflighted separate-host restore with exact row-count verification.
+          - Public CI gates: allowlist export, Go test/build/vet, Rust console test/build with pinned Raven \`v0.2.2\`, and 5 SCADA reference-reader unit tests.
+
+          ## Known limitations
+          - Only \`linux/amd64\` is operationally rehearsed; \`linux/arm64\` is not validated.
+          - Customer GPUs, live physical SCADA endpoints, multi-node HA, and sustained production ingestion benchmarks are outside this alpha's validated scope.
+
+          ## Verification (offline-capable)
+          1. Verify the \`allowed_signers\` fingerprint out-of-band against \`README.md\` / \`SECURITY.md\`.
+          2. Verify the source archive checksum and signature:
+             \`\`\`bash
+             python3 tools/tucunar-cell/scripts/community-bundle.py verify-file \\
+               --allowed-signers allowed_signers \\
+               tucunar-cell-${VERSION}.tar.gz.sha256
+             \`\`\`
+          3. Verify and import the offline OCI bundle into k0s:
+             \`\`\`bash
+             python3 tools/tucunar-cell/scripts/community-bundle.py verify . \\
+               --version ${VERSION} --allowed-signers allowed_signers --require-signature
+             sudo python3 tools/tucunar-cell/scripts/community-bundle.py import . \\
+               --version ${VERSION} --allowed-signers allowed_signers --require-signature
+             \`\`\`
+
+          ## Upgrade and migration
+          - Take a consistent quiesced ClickHouse backup with \`community-ops.py backup\` and retain your private instance directory before upgrading.
+          - Schema compatibility version: \`1\` (contract major \`1\`). Binary-only rollback is supported within the same \`schema_compatibility\`; schema changes require restoring the pre-upgrade ClickHouse backup first.
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md" $prerelease_flag
+            gh release upload "$TAG" "$RUNNER_TEMP/release-assets/"* --clobber
+          else
+            gh release create "$TAG" "$RUNNER_TEMP/release-assets/"* \
+              --title "Tucunar Cell Community ${VERSION}" \
+              --notes-file "$RUNNER_TEMP/notes.md" \
+              $prerelease_flag
+          fi

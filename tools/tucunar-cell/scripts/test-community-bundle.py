@@ -125,6 +125,37 @@ class CommunityBundleTests(unittest.TestCase):
                 BUNDLE.verify_bundle(bundle_dir, allowed_signers=allowed, require_signature=True)
             self.assertIn("hummingbird", str(ctx.exception))
 
+    def test_package_archive_and_verify_file_cli(self):
+        import sys
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _, config, _ = BUNDLE.load_release_config()
+            refs = [e["ref"] for e in BUNDLE.expected_images(config, "0.1.0-alpha.1")]
+            raw_tar = root / "combined.tar"
+            make_synthetic_oci_tar(raw_tar, refs)
+            digests = root / "digests.json"
+            digests.write_text(json.dumps({r: "sha256:abc123" for r in refs}))
+            key = root / "key_ed25519"
+            subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(key)], check=True)
+            allowed = root / "allowed_signers"
+            allowed.write_text(f"release@tucunar.com {Path(str(key) + '.pub').read_text().strip()}\n")
+            out_dir = root / "packaged"
+            subprocess.run([
+                sys.executable, str(SCRIPT), "package-archive",
+                str(raw_tar), str(out_dir),
+                "--version", "0.1.0-alpha.1",
+                "--commit", "deadbeef",
+                "--image-digests-json", str(digests),
+                "--signing-key", str(key),
+                "--allowed-signers", str(allowed),
+            ], check=True)
+            sha_file = out_dir / "tucunar-cell-images-linux-amd64-0.1.0-alpha.1.oci.tar.sha256"
+            subprocess.run([
+                sys.executable, str(SCRIPT), "verify-file",
+                "--allowed-signers", str(allowed),
+                str(sha_file),
+            ], check=True)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11,3 +11,15 @@ Support commitments for a specific deployment are agreed separately.
 Bind local forwards to loopback, protect operator and intake credentials,
 restrict the cell namespace with NetworkPolicy, and keep cloud reporting
 explicitly configured. Public read access is a development-only opt-in.
+
+## Release signing key
+
+Official releases of `tucunar-labs/cell` are signed with OpenSSH Ed25519
+(`ssh-keygen -Y sign`, namespace `tucunar-cell-release`) using the public key
+published in `allowed_signers`:
+
+- Principal: `release@tucunar.com`
+- Fingerprint: `SHA256:eQ180qR6xB4XD1Ko1crMX7pmuA9r6wheKbgYhkRp11s`
+
+Always verify release checksums and signatures offline against this fingerprint
+before importing OCI bundles or running scripts on a target host.
